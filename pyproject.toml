@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "parry33"
+version = "0.1.0"
+description = "Vision-based auto-parry harness for Clair Obscur: Expedition 33"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26"]
+
+[project.optional-dependencies]
+capture = ["bettercam>=1.0.0"]
+input   = ["vgamepad>=0.1.0"]
+audio   = ["pyaudiowpatch>=0.2.12"]
+record  = ["pyaudiowpatch>=0.2.12", "pillow>=10.0"]
+vision  = ["opencv-python>=4.9", "onnxruntime-gpu>=1.17"]
+learn   = ["scikit-learn>=1.4"]
+dev     = ["pytest>=8.0"]
+
+[project.scripts]
+parry33 = "parry33.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/parry33"]
+
+[tool.pytest.ini_options]
+# C:\Dev has its own conftest.py; without an ini here pytest walks up, adopts it
+# as rootdir and fails to import. This pins confcutdir to this project.
+testpaths = ["tests"]
+addopts = "-q"

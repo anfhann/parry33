@@ -1,0 +1,102 @@
+# parry33 configuration. Copy to config/local.toml and edit; local.toml is
+# loaded over default.toml when present.
+
+[game]
+# The real constraint, and the only one worth measuring against.
+# 150 ms == 9 frames at 60 fps game logic.
+parry_window_ms = 150.0
+# Game render rate -- MEASURED, not aspirational. Capture cannot exceed
+# min(game_fps, refresh_hz): Desktop Duplication emits on desktop *change*, so
+# the game's framerate, not the panel's, sets our sampling quantum.
+# Measured ~40-50 fps at 1440p fullscreen on this rig. Use the low end: the
+# latency budget should be built on the worst frame, not the average one.
+fps = 40
+# Set true if the game framerate is uncapped/variable. Frame-period variance
+# lands directly in our latency jitter, which is the part that cannot be aimed
+# away -- and it also breaks any model that assumes fixed frame spacing.
+# Run `parry33 bench capture` against the live game to measure the real spread.
+variable_fps = true
+
+[display]
+# Informational only, used to sanity-check the latency budget in reports.
+refresh_hz = 144
+
+[capture]
+backend    = "dxgi"        # dxgi | synthetic
+monitor    = 0             # DXGI output index
+gpu        = 0             # DXGI adapter index (must match the GPU the game renders on)
+mode       = "poll"        # MEASURED, do not change on reasoning alone.
+                           # poll  = spin on AcquireNextFrame in OUR thread.
+                           # thread = bettercam runs its own Python capture
+                           #   thread and we wait on an event. That thread
+                           #   contends with ours for the GIL, and Python's 5 ms
+                           #   switch interval starves it: measured 29 fps
+                           #   against a game rendering 75. It also does a full
+                           #   np.array() copy per frame in get_latest_frame().
+                           # Poll costs one saturated core and wins anyway.
+color      = "BGRA"        # BGRA is the native DDA format; anything else costs a conversion
+target_fps = 0             # 0 = uncapped, paced by the desktop's own update rate
+poll_sleep_us = 0          # 0 = pure spin between grab attempts in poll mode
+
+# ROI in absolute desktop pixels [left, top, right, bottom]. null = full screen.
+# At 3840x2160 a full BGRA frame is 33.2 MB -> ~6 ms of memcpy alone. Always crop.
+# Default below is a 960x540 box centred on a 4K display.
+region = [1440, 810, 2400, 1350]
+
+[input]
+backend = "sendinput"      # sendinput | gamepad | null
+hold_ms = 40.0             # press duration. MUST exceed one game tick or the poll misses it.
+async_release = true       # release on a scheduler thread so the hot path never blocks
+
+[input.bindings.sendinput]
+parry = "key:space"
+dodge = "key:lshift"
+jump  = "key:j"
+
+# The null backend mirrors a real one for dry runs; give it the same actions.
+[input.bindings.null]
+parry = "key:space"
+dodge = "key:lshift"
+jump  = "key:j"
+
+[input.bindings.gamepad]
+# Verify against your in-game bindings before trusting these.
+parry = "rb"
+dodge = "lb"
+jump  = "y"
+
+[timing]
+spin_margin_us = 400       # tail of every precise_sleep spent busy-spinning
+high_priority  = true      # SetPriorityClass(HIGH_PRIORITY_CLASS)
+time_critical  = true      # THREAD_PRIORITY_TIME_CRITICAL on the capture thread
+freeze_gc      = true      # gc.disable() + gc.freeze() around hot loops
+
+[bench]
+trials = 200
+warmup = 30
+seconds = 10.0
+
+[audio]
+# WASAPI loopback. Measured on this rig: emit->detect p50 17.7 ms, p99 20.1 ms
+# -- about 20 ms faster than the video path, and immune to GPU load.
+# device index from `parry33 audio devices`. -1 = follow the default output.
+# Pin an explicit index when the game routes through a virtual device: on a
+# SteelSeries Sonar / Voicemeeter setup the "Gaming" channel carries game audio
+# ONLY, with chat and music excluded -- a materially cleaner detection stream
+# than the mixed default output.
+device = -1
+blocksize = 256            # 5.33 ms at 48 kHz. 512 doubles the p99 tail (30 ms
+                           # vs 20 ms) for no gain in the median: the ~15 ms
+                           # floor is WASAPI's own buffer chain, not our blocks.
+detector = "flux"          # flux = spectral change (use this) | rms = envelope
+# MEASURED: there are two distinct events, and one detector spanning both only
+# ever finds the louder one. See docs/phase2-findings.md.
+#   grunt (the cue)    150-2500 Hz, ~110 ms BEFORE the parry window
+#   clash (the result) 6000+  Hz,   ~32 ms AFTER a landed parry
+grunt_band  = [150, 2500]
+clash_band  = [6000, 24000]
+grunt_sensitivity = 1.8    # permissive: 19/20 recall matters more than precision
+clash_sensitivity = 3.0    # precise: this is the auto-label anchor
+sensitivity = 3.0          # threshold in std-devs above the adaptive baseline
+refractory_ms = 80.0       # wall-clock lockout after an onset, NOT a block count
+floor_frac = 0.12          # absolute floor as a fraction of the decaying peak

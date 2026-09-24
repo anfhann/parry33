@@ -1,0 +1,11 @@
+# Phase 1 — capture + input + benchmarking
+numpy>=1.26
+bettercam>=1.0.0        # maintained dxcam fork; DXGI Desktop Duplication
+vgamepad>=0.1.0         # ViGEmClient bindings (requires ViGEmBus driver, see README)
+pyaudiowpatch>=0.2.12   # PyAudio fork with WASAPI loopback (system-audio capture)
+
+# Phase 2+ (not needed for Phase 1 benches)
+# opencv-python>=4.9
+# onnxruntime-gpu>=1.17
+pillow>=10.0             # contact-sheet export for the recorder
+scikit-learn>=1.4        # feasibility modelling (docs/phase3-feasibility.md)

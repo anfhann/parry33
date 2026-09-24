@@ -1,0 +1,38 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+data/raw/**
+data/clips/**
+runs/**
+!runs/.gitkeep
+*.npy
+*.mp4
+*.onnx
+*.engine
+config/local.toml
+!data/raw/.gitkeep
+
+# Recorded capture media: video, frame arrays, audio. Deleted, never committed.
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.webm
+*.m4v
+*.wmv
+*.flv
+*.npz
+*.wav
+
+# Build output and dependencies
+build/
+dist/
+node_modules/
+
+# Secrets
+.env
+.env.*
+!.env.example
