@@ -1,0 +1,54 @@
+# Copy to config/local.toml and edit. Loaded ON TOP of default.toml, so put only
+# the values that differ from the defaults here. local.toml is gitignored.
+#
+# Fill it in after running, while the game is in an actual fight:
+#   parry33 bench capture --delay 20 --seconds 30
+# It prints the numbers to paste below.
+
+[game]
+# The frame rate the game actually renders at, not the cap you set. Budget on
+# the p90 interarrival the bench reports, not the median.
+#
+# Counterintuitive but measured: uncapping the frame rate gives FEWER captured
+# frames, because the game saturates the GPU and Desktop Duplication starves
+# behind it (19.1 fps captured uncapped vs 59.4 fps at a 60 cap). Cap the game.
+fps = 60
+
+[display]
+# The panel may offer a different refresh rate at 1080p than at 4K, so update
+# this if you change desktop resolution.
+refresh_hz = 144
+
+[capture]
+# ROI in absolute desktop pixels [left, top, right, bottom].
+# Full screen is a reasonable default: Phase 1 measured ROI area as near-free
+# for capture (DXGI crops on the GPU side), and full screen keeps the boss
+# health bar and the skill menu in frame, which the analysis scripts use.
+#
+#   3840x2160 -> [0, 0, 3840, 2160]
+#   2560x1440 -> [0, 0, 2560, 1440]
+#   1920x1080 -> [0, 0, 1920, 1080]
+#
+# Out-of-bounds regions are clamped with a warning, but fix them here rather
+# than relying on the clamp.
+region = [0, 0, 2560, 1440]
+
+[input.bindings.sendinput]
+# MUST match your in-game keybinds or the bot presses the wrong key.
+#
+# Check that the parry key is bound to NOTHING ELSE. In this game E defaults to
+# both parry and skill/menu confirm, which contaminated the recorded labels
+# twice before it was noticed: presses logged as parries were actually skill
+# activations on the player's own turn.
+parry  = "key:e"
+dodge  = "key:q"
+attack = "key:f"
+
+# Skip Turn, held rather than tapped -- the game wants ~1.5 s. The unattended
+# recorder uses this to advance turns instead of attacking, because attacking
+# kills the boss and a punching-bag run wants the fight to last.
+skip   = "key:tab"
+
+# The HP readout and boss health bar regions are screen-position dependent and
+# default to 2560x1440. If your resolution differs, pass --hp-roi / --boss-roi
+# to scripts/record_hits.py, or capture a run and locate them from the frames.
